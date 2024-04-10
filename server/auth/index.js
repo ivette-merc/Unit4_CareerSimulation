@@ -1,13 +1,14 @@
+require("dotenv").config();
+
 const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
-const JWT_SECRET = "helloworld";
 
 const findUserWithToken = async (token) => {
   let id;
   try {
-    const payload = await jwt.verify(token, JWT_SECRET);
+    const payload = await jwt.verify(token, process.env.JWT_SECRET);
     id = payload.id;
     console.log("payload is:", payload);
   } catch (error) {
@@ -15,7 +16,7 @@ const findUserWithToken = async (token) => {
     throw new Error("Not authorized");
   }
 
-  try {
+  
     const user = await prisma.users.findUnique({
       where: {
         id: id,
@@ -27,27 +28,19 @@ const findUserWithToken = async (token) => {
     });
 
     if (!user) {
+      const error =new Error('Not Authorized');
+      error.status = 401
       throw new Error("User not found");
+    
     }
-
     return user;
-  } catch (error) {
-    console.error("Error querying database:", error);
-    throw new Error("Internal Server Error");
-  }
+ 
 };
 
 const isLoggedIn = async (req, res, next) => {
   try {
-    // Extracting the token from the authorization header
-    const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(" ")[1];
-
-    if (!token) {
-      throw new Error("Authorization token not provided");
-    }
-
-    // Finding user with the provided token
+    const auth = req.headers.authorization;
+    const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
     req.user = await findUserWithToken(token);
     next();
   } catch (error) {
@@ -55,4 +48,22 @@ const isLoggedIn = async (req, res, next) => {
   }
 };
 
-module.exports = isLoggedIn;
+// const isLoggedIn = async (req, res, next) => {
+//   try {
+//     // Extracting the token from the authorization header
+//     const authHeader = req.headers["authorization"];
+//     const token = authHeader && authHeader.split(" ")[1];
+
+//     if (!token) {
+//       throw new Error("Authorization token not provided");
+//     }
+
+//     // Finding user with the provided token
+//     req.user = await findUserWithToken(token);
+//     next();
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+module.exports =  isLoggedIn;

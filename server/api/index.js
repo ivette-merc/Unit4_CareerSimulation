@@ -14,7 +14,18 @@ router.use((err, req, res, next) => {
   next(err);
 });
 
-const JWT_SECRET = "helloworld";
+//const JWT_SECRET = "helloworld";
+
+// const isLoggedIn = async (req, res, next) => {
+//   try {
+//     const auth = req.headers.authorization;
+//     const token = auth?.startsWith("bearer ") ? authSlice(7) : null;
+//     req.user = await findUserWithToken(token);
+//     next();
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 //GET ALL ITEMS
 router.get("/items", async (req, res, next) => {
@@ -119,7 +130,7 @@ router.get("/login", async (req, res, next) => {
     }
 
     // Create a token with the instructor id
-    const token = jwt.sign({ id: user.id }, JWT_SECRET);
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
 
     res.send({ token });
   } catch (error) {
@@ -171,22 +182,20 @@ router.post("/comments/:reviewsId", isLoggedIn, async (req, res, next) => {
   }
 });
 //get all reviews user has made
-router.get("/me/reviews", isLoggedIn, async (req, res, next) => {
+router.get("/me/reviews", isLoggedIn, async (req, res) => {
   try {
-    // Get reviews written by the logged-in user
+    const userId = req.user.id;
     const userReviews = await prisma.reviews.findMany({
       where: {
-        userId: req.user.id,
+        userId: userId,
       },
     });
-    if (userReviews.length === 0) {
-      return res.status(200).send("You haven't written any reviews yet.");
-    }
-    res.send(userReviews);
+    res.json(userReviews);
   } catch (error) {
-    next(error);
+    console.error(error);
   }
 });
+
 //get comments user has made
 router.get("/me/comments", isLoggedIn, async (req, res, next) => {
   try {
@@ -219,10 +228,28 @@ router.delete("/me/reviews/:id", isLoggedIn, async (req, res, next) => {
   }
 });
 
-//edit review user has made 
+//delete comment user has made
+router.delete("/me/comment/:id", isLoggedIn, async (req, res, next) => {
+  try {
+    const commentId = parseInt(req.params.id);
+    await prisma.comments.delete({
+      where: {
+        id: commentId,
+      },
+      select: {
+        userId: true,
+      },
+    });
+    res.status(200).send("Comment deleted");
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+//edit review user has made
 router.put("/reviews/:id", isLoggedIn, async (req, res, next) => {
   try {
-    const userId = req.body.userId;
+    const userId = req.user.userId;
     const reviewId = parseInt(req.params.id);
 
     const review = await prisma.reviews.findUnique({
