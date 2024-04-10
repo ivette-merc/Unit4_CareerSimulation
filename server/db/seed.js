@@ -58,6 +58,15 @@ async function seed() {
         );
       }
     }
+    // const reviewData = Array.from({length: 10}).map(()=> {
+    //   return {
+    //     review: faker.lorem.sentence(),
+    //     rating: faker.number.int({ min: 0, max: 5 }),
+    //     itemId: items[Math.floor(Math.random() * items.length)].id,
+    //     userId: users[Math.floor(Math.random() * users.length)].id,
+    //   };
+    // });
+    // await prisma.reviews.createMany({ data: reviewData });
 
     //SEEDING COMMENTS
     const commentData = Array.from({ length: 10 }).map(() => {
