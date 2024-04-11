@@ -108,7 +108,7 @@ router.post("/register", async (req, res, next) => {
     });
 
     // Create a token with the user id
-    const token = jwt.sign({ id: user.id }, JWT_SECRET);
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
 
     res.status(201).send({ token });
   } catch (error) {
@@ -230,16 +230,18 @@ router.delete("/me/reviews/:id", isLoggedIn, async (req, res, next) => {
 
 //delete comment user has made
 router.delete("/me/comment/:id", isLoggedIn, async (req, res, next) => {
-  try {
+  try { //find comment first, check that username is the same as req.user.username and then this code below 
     const commentId = parseInt(req.params.id);
     await prisma.comments.delete({
       where: {
         id: commentId,
+        username: req.user.username,
       },
       select: {
-        userId: true,
+        username: true,
       },
     });
+    //error message 401 not authorized 
     res.status(200).send("Comment deleted");
   } catch (error) {
     console.error(error);
@@ -268,12 +270,12 @@ router.put("/reviews/:id", isLoggedIn, async (req, res, next) => {
     await prisma.reviews.update({
       where: {
         id: reviewId,
-      },
+      }, //just include what is being updated 
       data: {
         review: req.body.review,
         rating: req.body.rating,
-        itemId: req.body.itemId,
-        userId: req.body.userId,
+       // itemId: req.body.itemId,
+       // userId: userId,
       },
     });
   } catch (error) {
