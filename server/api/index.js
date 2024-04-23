@@ -214,37 +214,69 @@ router.get("/me/comments", isLoggedIn, async (req, res, next) => {
 });
 
 //delete review user has made
-router.delete("/me/reviews/:id", isLoggedIn, async (req, res, next) => {
+router.delete("/me/review/:id", isLoggedIn, async (req, res, next) => {
   try {
     const reviewId = parseInt(req.params.id);
+
+    // Find the review
+    const review = await prisma.reviews.findUnique({
+      where: {
+        id: reviewId,
+      },
+    });
+
+    // Check if the review exists and if the userId matches
+    if (!review || review.userId !== req.user.userId) {
+      // If the review doesn't exist or the userId doesn't match, send a 401 unauthorized error
+      return res.status(401).send("Not authorized to delete this review");
+    }
+
+    // If the review exists and the userId matches, delete the review
     await prisma.reviews.delete({
       where: {
         id: reviewId,
       },
     });
+
+    // Send success response
     res.status(200).send("Review deleted");
   } catch (error) {
     console.error(error);
+    // Send error response
+    res.status(500).send("Internal Server Error");
   }
 });
 
 //delete comment user has made
 router.delete("/me/comment/:id", isLoggedIn, async (req, res, next) => {
-  try { //find comment first, check that username is the same as req.user.username and then this code below 
+  try {
     const commentId = parseInt(req.params.id);
+
+    // Finding the comment
+    const comment = await prisma.comments.findUnique({
+      where: {
+        id: commentId,
+      },
+    });
+
+    // Check if the comment exists and if the username matches
+    if (!comment || comment.username !== req.user.username) {
+      // If the comment doesn't exist or the username doesn't match, send a 401 unauthorized error
+      return res.status(401).send("Not authorized to delete this comment");
+    }
+
+    // If the comment exists and the username matches, delete the comment
     await prisma.comments.delete({
       where: {
         id: commentId,
-        username: req.user.username,
-      },
-      select: {
-        username: true,
       },
     });
-    //error message 401 not authorized 
+
     res.status(200).send("Comment deleted");
   } catch (error) {
     console.error(error);
+
+    res.status(500).send("Internal Server Error");
   }
 });
 
@@ -270,12 +302,12 @@ router.put("/reviews/:id", isLoggedIn, async (req, res, next) => {
     await prisma.reviews.update({
       where: {
         id: reviewId,
-      }, //just include what is being updated 
+      }, //just include what is being updated
       data: {
         review: req.body.review,
         rating: req.body.rating,
-       // itemId: req.body.itemId,
-       // userId: userId,
+        // itemId: req.body.itemId,
+        // userId: userId,
       },
     });
   } catch (error) {
@@ -300,3 +332,36 @@ router.get("/me", isLoggedIn, async (req, res, next) => {
 });
 
 module.exports = router;
+
+// router.delete("/me/comment/:id", isLoggedIn, async (req, res, next) => {
+//   try { //find comment first, check that username is the same as req.user.username and then this code below
+//     const commentId = parseInt(req.params.id);
+//     await prisma.comments.delete({
+//       where: {
+//         id: commentId,
+//         username: req.user.username,
+//       },
+//       select: {
+//         username: true,
+//       },
+//     });
+//     //error message 401 not authorized
+//     res.status(200).send("Comment deleted");
+//   } catch (error) {
+//     console.error(error);
+//   }
+// });
+
+// router.delete("/me/reviews/:id", isLoggedIn, async (req, res, next) => {
+//   try {
+//     const reviewId = parseInt(req.params.id);
+//     await prisma.reviews.delete({
+//       where: {
+//         id: reviewId,
+//       },
+//     });
+//     res.status(200).send("Review deleted");
+//   } catch (error) {
+//     console.error(error);
+//   }
+// });
